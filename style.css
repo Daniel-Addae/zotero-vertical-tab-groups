@@ -1,0 +1,239 @@
+/* vertical tab groups styling
+   colors lean on zotero's own theme variables with plain fallbacks so this
+   reads ok in both light and dark mode. */
+
+#vtg-panel {
+  width: 240px;
+  min-width: 160px;
+  max-width: 420px;
+  height: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.12));
+  background: var(--material-sidepane, var(--color-sidepane, #f5f5f6));
+  font-size: 12px;
+  resize: horizontal;
+  overflow: hidden;
+}
+/* collapsed: panel slides away, the slim rail takes over */
+#vtg-panel.vtg-collapsed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+/* the slim handle, hidden until the panel is collapsed */
+#vtg-rail {
+  width: 0;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: var(--material-sidepane, var(--color-sidepane, #f5f5f6));
+  border-right: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.12));
+}
+#vtg-rail.vtg-rail-shown {
+  width: 26px;
+  padding-top: 8px;
+}
+#vtg-rail:hover { background: var(--fill-quinary, rgba(0,0,0,0.06)); }
+.vtg-rail-btn { font-size: 14px; opacity: 0.7; }
+.vtg-rail-label {
+  writing-mode: vertical-rl;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.6;
+  letter-spacing: 0.04em;
+}
+
+/* the native horizontal bar (and any leaking toolbar buttons) take no space */
+.vtg-native-hidden {
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+}
+
+/* whatever sat under the old tab bar now fills the rest of the row */
+.vtg-content-fill {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#vtg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.12));
+}
+#vtg-toolbar .vtg-title { font-weight: 600; opacity: 0.75; flex: 1; }
+#vtg-new-group, #vtg-collapse {
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.2));
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+#vtg-collapse { padding: 2px 7px; font-size: 13px; line-height: 1; }
+#vtg-new-group:hover, #vtg-collapse:hover { background: var(--fill-quinary, rgba(0,0,0,0.06)); }
+
+#vtg-list { flex: 1; overflow-y: auto; padding: 4px; }
+
+.vtg-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  margin: 1px 0;
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+.vtg-tab:hover { background: var(--fill-quinary, rgba(0,0,0,0.06)); }
+.vtg-tab.vtg-active { background: var(--color-accent, #4072e0); color: #fff; }
+.vtg-tab.vtg-pinned { font-weight: 600; margin-bottom: 4px; }
+.vtg-tab-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vtg-tab-close { opacity: 0; padding: 0 4px; border-radius: 4px; font-size: 14px; line-height: 1; }
+.vtg-tab:hover .vtg-tab-close { opacity: 0.7; }
+.vtg-tab-close:hover { opacity: 1; background: rgba(0,0,0,0.15); }
+.vtg-dragging { opacity: 0.4; }
+
+.vtg-group {
+  margin: 4px 0;
+  border-radius: 6px;
+  border-left: 3px solid var(--vtg-color, #3b82f6);
+  background: var(--fill-quinary, rgba(0,0,0,0.03));
+}
+.vtg-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px 6px 0 0;
+}
+.vtg-group-header:hover { background: var(--fill-quinary, rgba(0,0,0,0.06)); }
+.vtg-caret { width: 10px; opacity: 0.6; font-size: 10px; }
+.vtg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--vtg-color, #3b82f6); flex: 0 0 auto; cursor: pointer;
+}
+.vtg-group-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vtg-count { font-size: 10px; opacity: 0.6; min-width: 14px; text-align: center; }
+.vtg-group-del { opacity: 0; font-size: 14px; line-height: 1; padding: 0 3px; }
+.vtg-group-header:hover .vtg-group-del { opacity: 0.6; }
+.vtg-group-del:hover { opacity: 1; }
+.vtg-group-body { padding: 2px 4px 4px 4px; }
+
+.vtg-rename-input {
+  flex: 1; font: inherit; padding: 1px 4px;
+  border: 1px solid var(--color-accent, #4072e0); border-radius: 4px;
+  background: var(--material-background, #fff); color: inherit;
+}
+
+.vtg-ungrouped { margin-top: 6px; padding: 2px; border-radius: 6px; }
+.vtg-ungrouped-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+  opacity: 0.45; padding: 4px 7px 2px 7px;
+}
+
+.vtg-drop-hover {
+  outline: 2px dashed var(--color-accent, #4072e0);
+  outline-offset: -2px;
+  background: var(--fill-quinary, rgba(64,114,224,0.12));
+}
+
+/* folders / collections pane lifted out of the library tab so it stays put */
+.vtg-collections-dock {
+  width: 230px;
+  min-width: 150px;
+  max-width: 460px;
+  align-self: stretch;
+  height: 100%;
+  box-sizing: border-box;
+  resize: horizontal;
+  overflow: hidden;
+  border-right: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.12));
+}
+
+/* the per tab "..." button that opens the add to group menu */
+.vtg-tab-menu {
+  opacity: 0;
+  padding: 0 3px;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.vtg-tab:hover .vtg-tab-menu { opacity: 0.6; }
+.vtg-tab-menu:hover { opacity: 1; background: rgba(0,0,0,0.15); }
+
+/* the add to group popup */
+.vtg-menu {
+  position: fixed;
+  z-index: 99999;
+  min-width: 190px;
+  background: var(--material-background, #fff);
+  color: var(--fill-primary, inherit);
+  border: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.2));
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  padding: 4px;
+  font-size: 12px;
+}
+.vtg-menu-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.5;
+  padding: 4px 8px;
+}
+.vtg-menu-empty { padding: 4px 8px; opacity: 0.5; }
+.vtg-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vtg-menu-item:hover { background: var(--fill-quinary, rgba(0,0,0,0.08)); }
+.vtg-menu-sep {
+  height: 1px;
+  background: var(--material-border-quarternary, rgba(0,0,0,0.12));
+  margin: 4px 2px;
+}
+
+/* group menu colour swatches */
+.vtg-swatches {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  flex-wrap: wrap;
+}
+.vtg-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+.vtg-swatch:hover { transform: scale(1.15); }
+.vtg-swatch-on { box-shadow: 0 0 0 2px var(--material-background, #fff), 0 0 0 4px var(--color-accent, #4072e0); }
+.vtg-menu-danger { color: #e03131; }
