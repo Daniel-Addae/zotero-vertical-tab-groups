@@ -1,0 +1,15 @@
+{
+  "addons": {
+    "vertical-tab-groups@daniel.local": {
+      "updates": [
+        {
+          "version": "1.3.0",
+          "update_link": "https://github.com/Daniel-Addae/zotero-vertical-tab-groups/releases/download/v1.3.0/vertical-tab-groups.xpi",
+          "applications": {
+            "zotero": { "strict_min_version": "8.0", "strict_max_version": "9.0.*" }
+          }
+        }
+      ]
+    }
+  }
+}

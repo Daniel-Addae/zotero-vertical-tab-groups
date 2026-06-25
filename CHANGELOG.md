@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.3.0 - added an on/off toggle in the title bar; made the panel update leaner so opening files stays fast
 - v1.2.0 - folder opens its items on a single click (switch on mousedown before the tree handles it)
 - v1.1.0 - re-pinned the folders pane and fixed folder clicks by selecting the first/library tab directly
 - v1.0.0 - reverted folders to stock behavior (pinning removed); folders only show in library view

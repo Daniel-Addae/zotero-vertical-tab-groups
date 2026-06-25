@@ -237,3 +237,25 @@
 .vtg-swatch:hover { transform: scale(1.15); }
 .vtg-swatch-on { box-shadow: 0 0 0 2px var(--material-background, #fff), 0 0 0 4px var(--color-accent, #4072e0); }
 .vtg-menu-danger { color: #e03131; }
+
+/* on/off switch in the title bar */
+#vtg-power {
+  font-size: 11px;
+  margin: 2px 8px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--material-border-quarternary, rgba(0,0,0,0.25));
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  -moz-box-flex: 0;
+  align-self: center;
+}
+#vtg-power:hover { background: var(--fill-quinary, rgba(0,0,0,0.06)); }
+#vtg-power.vtg-power-on {
+  border-color: var(--color-accent, #4072e0);
+  color: var(--color-accent, #4072e0);
+  font-weight: 600;
+}
+#vtg-power.vtg-power-off { opacity: 0.7; }

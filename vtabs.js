@@ -17,6 +17,7 @@ VTabs = {
   PREF_GROUPS: "extensions.vtabs.groups",
   PREF_ASSIGN: "extensions.vtabs.assignments",
   PREF_COLLAPSED: "extensions.vtabs.collapsed",
+  PREF_ENABLED: "extensions.vtabs.enabled",
 
   COLORS: [
     { id: "blue",   hex: "#3b82f6" },
@@ -46,6 +47,8 @@ VTabs = {
   saveAssign: function (map) { Zotero.Prefs.set(this.PREF_ASSIGN, JSON.stringify(map), true); },
   loadCollapsed: function () { return Zotero.Prefs.get(this.PREF_COLLAPSED, true) === true; },
   saveCollapsed: function (v) { Zotero.Prefs.set(this.PREF_COLLAPSED, !!v, true); },
+  loadEnabled: function () { return Zotero.Prefs.get(this.PREF_ENABLED, true) !== false; },
+  saveEnabled: function (v) { Zotero.Prefs.set(this.PREF_ENABLED, !!v, true); },
 
   colorHex: function (colorId) {
     var c = this.COLORS.find(function (x) { return x.id === colorId; });
@@ -63,7 +66,7 @@ VTabs = {
     var tabBar = doc.getElementById("tab-bar-container");
     if (!deck || !deck.parentNode) { this.log("#tabs-deck not found, cannot place panel"); return; }
 
-    var st = { win: win, doc: doc, deck: deck, tabBar: tabBar, observer: null, renderQueued: false, saved: {}, hidden: [] };
+    var st = { win: win, doc: doc, deck: deck, tabBar: tabBar, observer: null, renderQueued: false, saved: {}, hidden: [], enabled: false };
     this.state.set(win, st);
     this.windows.add(win);
 
@@ -75,20 +78,91 @@ VTabs = {
     doc.documentElement.appendChild(link);
     st.styleLink = link;
 
-    st.panel = this.buildPanel(doc, win);
-    st.rail = this.buildRail(doc, win);
+    // the on/off switch lives in the title bar so it is reachable even when the
+    // vertical tabs are turned off
+    st.toggleBtn = this.buildToggleButton(doc, win);
+    var titlebar = doc.getElementById("zotero-title-bar");
+    if (titlebar) titlebar.insertBefore(st.toggleBtn, titlebar.firstChild);
+    else doc.documentElement.appendChild(st.toggleBtn);
+    this.updateToggleButton(st);
 
+    if (this.loadEnabled()) this.enable(win);
+  },
+
+  // turn the vertical tabs on: build the panel and apply the layout
+  enable: function (win) {
+    var st = this.state.get(win);
+    if (!st || st.enabled) return;
+    var self = this;
+    st.panel = this.buildPanel(st.doc, win);
+    st.rail = this.buildRail(st.doc, win);
     this.applyLayout(st);
     this.applyCollapsed(st);
-
-    var self = this;
-    if (tabBar) {
+    if (st.tabBar) {
       st.observer = new win.MutationObserver(function () { self.queueRender(win); });
-      st.observer.observe(tabBar, { childList: true, subtree: true, attributes: true });
+      st.observer.observe(st.tabBar, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["selected", "aria-selected", "aria-current"]
+      });
     }
-
+    st.lastSig = null;
     this.render(win);
-    this.log("panel injected into container <" + (st.container ? st.container.tagName : "?") + ">");
+    st.enabled = true;
+    this.updateToggleButton(st);
+    this.log("vertical tabs enabled");
+  },
+
+  // turn the vertical tabs off: tear down the panel and restore stock zotero
+  disable: function (win) {
+    var st = this.state.get(win);
+    if (!st || !st.enabled) return;
+    this.closeTabMenu(win);
+    if (st.observer) { st.observer.disconnect(); st.observer = null; }
+    if (st.panel && st.panel.parentNode) st.panel.parentNode.removeChild(st.panel);
+    if (st.rail && st.rail.parentNode) st.rail.parentNode.removeChild(st.rail);
+    this.restoreLayout(st);
+    // reset bookkeeping so a later enable starts clean
+    st.hidden = [];
+    st.saved = {};
+    st.coll = null; st.collParent = null; st.collNext = null;
+    st.splitter = null; st.docDown = null; st.docKey = null;
+    st.panel = null; st.rail = null;
+    st.lastSig = null;
+    st.enabled = false;
+    this.updateToggleButton(st);
+    this.log("vertical tabs disabled");
+  },
+
+  // flip the saved on/off state and apply it to every open window
+  togglePower: function (win) {
+    var en = !this.loadEnabled();
+    this.saveEnabled(en);
+    var self = this;
+    this.windows.forEach(function (w) {
+      if (en) self.enable(w); else self.disable(w);
+      var s = self.state.get(w);
+      if (s) self.updateToggleButton(s);
+    });
+  },
+
+  buildToggleButton: function (doc, win) {
+    var self = this;
+    var btn = doc.createElement("button");
+    btn.id = "vtg-power";
+    btn.title = "Turn the vertical tabs on or off";
+    btn.addEventListener("click", function () { self.togglePower(win); });
+    return btn;
+  },
+
+  updateToggleButton: function (st) {
+    if (!st || !st.toggleBtn) return;
+    var on = this.loadEnabled();
+    st.toggleBtn.textContent = on ? "Vertical Tabs: On" : "Vertical Tabs: Off";
+    st.toggleBtn.classList.toggle("vtg-power-on", on);
+    st.toggleBtn.classList.toggle("vtg-power-off", !on);
   },
 
   applyLayout: function (st) {
@@ -257,7 +331,7 @@ VTabs = {
     if (!st || st.renderQueued) return;
     st.renderQueued = true;
     var self = this;
-    win.setTimeout(function () { st.renderQueued = false; self.render(win); }, 30);
+    win.setTimeout(function () { st.renderQueued = false; self.render(win); }, 75);
   },
 
   tabKey: function (tab) {
@@ -277,6 +351,15 @@ VTabs = {
     var selectedID = Zotero_Tabs ? Zotero_Tabs.selectedID : null;
     var groups = this.loadGroups();
     var assign = this.loadAssign();
+
+    // cheap guard: only rebuild the panel when the visible state actually
+    // changed, so the flood of tab-bar mutations while a file opens does not
+    // keep re-rendering us and slowing the open down.
+    var sig = selectedID + "|" +
+      tabs.map(function (t) { return t.id + ":" + t.type + ":" + (t.title || ""); }).join(",") +
+      "|" + JSON.stringify(groups) + "|" + JSON.stringify(assign);
+    if (sig === st.lastSig) return;
+    st.lastSig = sig;
 
     while (list.firstChild) list.removeChild(list.firstChild);
 
@@ -653,12 +736,9 @@ VTabs = {
     var st = this.state.get(win);
     if (!st) return;
     try {
-      this.closeTabMenu(win);
-      if (st.observer) st.observer.disconnect();
-      if (st.panel && st.panel.parentNode) st.panel.parentNode.removeChild(st.panel);
-      if (st.rail && st.rail.parentNode) st.rail.parentNode.removeChild(st.rail);
+      this.disable(win);
+      if (st.toggleBtn && st.toggleBtn.parentNode) st.toggleBtn.parentNode.removeChild(st.toggleBtn);
       if (st.styleLink && st.styleLink.parentNode) st.styleLink.parentNode.removeChild(st.styleLink);
-      this.restoreLayout(st);
     } catch (e) { this.log("cleanup error " + e); }
     this.state.delete(win);
     this.windows.delete(win);

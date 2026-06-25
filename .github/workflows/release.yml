@@ -1,0 +1,57 @@
+name: Release
+
+# fires when you push a version tag like v1.3.0
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: v
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # keep the packaged manifest version in sync with the tag
+      - name: Sync manifest version
+        run: |
+          v="${{ steps.v.outputs.version }}"
+          tmp=$(mktemp)
+          sed -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1${v}\2/" manifest.json > "$tmp" && mv "$tmp" manifest.json
+          cat manifest.json
+
+      - name: Build xpi
+        run: zip -r vertical-tab-groups.xpi manifest.json bootstrap.js vtabs.js style.css
+
+      - name: Generate updates.json
+        run: |
+          cat > updates.json <<JSON
+          {
+            "addons": {
+              "vertical-tab-groups@daniel.local": {
+                "updates": [
+                  {
+                    "version": "${{ steps.v.outputs.version }}",
+                    "update_link": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/vertical-tab-groups.xpi",
+                    "applications": { "zotero": { "strict_min_version": "8.0", "strict_max_version": "9.0.*" } }
+                  }
+                ]
+              }
+            }
+          }
+          JSON
+          cat updates.json
+
+      - name: Publish release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            vertical-tab-groups.xpi
+            updates.json
